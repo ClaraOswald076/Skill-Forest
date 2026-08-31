@@ -432,7 +432,7 @@ def submit_quiz(db: Session, attempt_id: int, answers: List[dict]) -> dict:
         db.commit()
 
         # Save wrong answers to error book
-        _save_errors(db, attempt, grading.get("results", []))
+        _save_errors(db, attempt, grading.get("results", []), answers)
 
         return grading
     except Exception as e:
@@ -440,10 +440,11 @@ def submit_quiz(db: Session, attempt_id: int, answers: List[dict]) -> dict:
         raise
 
 
-def _save_errors(db: Session, attempt: QuizAttempt, results: List[dict]):
+def _save_errors(db: Session, attempt: QuizAttempt, results: List[dict], answers: List[dict]):
     """Save incorrect answers to the error book."""
     questions = json.loads(attempt.questions_json).get("questions", [])
     q_map = {q["q_number"]: q for q in questions}
+    answer_map = {a.get("q_number"): a.get("answer", "") for a in answers}
 
     for r in results:
         if not r.get("is_correct", True):
@@ -460,7 +461,7 @@ def _save_errors(db: Session, attempt: QuizAttempt, results: List[dict]):
                 skill_id=skill_id,
                 question_type=q.get("question_type", "unknown"),
                 question_text=q.get("question_text", ""),
-                user_answer="",  # Will be filled from answers
+                user_answer=answer_map.get(r["q_number"], ""),
                 correct_answer=q.get("correct_answer", ""),
                 explanation=r.get("explanation", ""),
             )

@@ -30,6 +30,8 @@ def generate_tutorial(data: TutorialGenerateRequest, db: Session = Depends(get_d
         if not module:
             raise HTTPException(status_code=404, detail="Todo not found")
         return module.to_dict()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"教程生成失败: {str(e)}")
 
@@ -133,7 +135,7 @@ def submit_quiz(data: QuizSubmitRequest, db: Session = Depends(get_db)):
     try:
         answers = [a.model_dump() for a in data.answers]
         grading = learning_service.submit_quiz(db, data.attempt_id, answers)
-        return QuizSubmitResponse(**grading)
+        return QuizSubmitResponse(attempt_id=data.attempt_id, **grading)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
