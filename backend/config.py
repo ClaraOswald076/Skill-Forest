@@ -1,6 +1,12 @@
 """Application configuration."""
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# 支持 README 里的方式 3：复制 .env.example 为 .env 填密钥
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # DeepSeek API — 从环境变量读取，或在此填入你的 API Key
 # 获取地址: https://platform.deepseek.com/api_keys
