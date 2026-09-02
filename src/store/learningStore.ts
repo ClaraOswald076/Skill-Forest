@@ -27,6 +27,9 @@ interface LearningState {
   loadTutorial: (todoId: number) => Promise<void>;
   regenerateTutorial: (todoId: number) => Promise<void>;
 
+  // Actions — lifecycle
+  resetForTodo: () => void;
+
   // Actions — Chat
   loadSessions: (todoId: number) => Promise<void>;
   createSession: (todoId: number, title?: string) => Promise<number>;
@@ -60,6 +63,22 @@ export const useLearningStore = create<LearningState>((set, get) => ({
   grading: false,
   errors: [],
   errorStats: null,
+
+  // ── Lifecycle ──
+  // 切换学习任务时必须先调用：store 是全局单例，不清掉上一个任务的状态会串数据
+  resetForTodo: () =>
+    set({
+      tutorial: null,
+      tutorialLoading: false,
+      sessions: [],
+      activeSession: null,
+      sendingMessage: false,
+      currentQuestions: null,
+      currentAttemptId: null,
+      quizLoading: false,
+      gradingResult: null,
+      grading: false,
+    }),
 
   // ── Tutorial ──
   loadTutorial: async (todoId) => {

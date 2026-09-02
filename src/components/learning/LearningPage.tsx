@@ -16,13 +16,15 @@ export default function LearningPage() {
   const { todoId } = useParams<{ todoId: string }>();
   const navigate = useNavigate();
   const { todos, fetchTodos } = useTodoStore();
-  const { loadTutorial } = useLearningStore();
+  const { loadTutorial, resetForTodo } = useLearningStore();
   const [todo, setTodo] = useState<TodoItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      // 任务切换时先清掉上一个任务的会话/测评状态，避免串数据
+      resetForTodo();
       // Try to get todo from store, or fetch directly
       const existing = todos.find((t) => t.id === Number(todoId));
       if (existing) {
