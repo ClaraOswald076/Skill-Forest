@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Table, Tag, Checkbox, Select, Space, Button } from 'antd';
+import { Typography, Table, Tag, Checkbox, Select, Space, Button, Alert } from 'antd';
 import { BookOutlined } from '@ant-design/icons';
 import { useTodoStore, useJobStore } from '@/store';
 import type { TodoItem } from '@/types/todo';
@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
 
 export default function TodoListPage() {
   const navigate = useNavigate();
-  const { todos, loading, filters, fetchTodos, setFilter, toggleTodoStatus } =
+  const { todos, loading, error, filters, fetchTodos, setFilter, toggleTodoStatus } =
     useTodoStore();
   const { jobs, fetchJobs } = useJobStore();
 
@@ -126,7 +126,9 @@ export default function TodoListPage() {
         />
       </Space>
 
-      {loading ? (
+      {error ? (
+        <Alert type="error" showIcon message="任务列表加载失败" description={error} />
+      ) : loading ? (
         <LoadingOverlay />
       ) : todos.length === 0 ? (
         <EmptyState description="暂无任务数据" />

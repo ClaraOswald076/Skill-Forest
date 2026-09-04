@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Card, Descriptions, List, Tag, Button, Space } from 'antd';
+import { Typography, Card, Descriptions, List, Tag, Button, Space, Result } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useJobStore } from '@/store';
 import LoadingOverlay from '@/components/common/LoadingOverlay';
@@ -11,11 +11,26 @@ const { Title, Paragraph } = Typography;
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { selectedJob: job, loading, fetchJob } = useJobStore();
+  const { selectedJob: job, loading, error, fetchJob } = useJobStore();
 
   useEffect(() => {
     if (id) fetchJob(Number(id));
   }, [id, fetchJob]);
+
+  if (error) {
+    return (
+      <Result
+        status="warning"
+        title="岗位不存在或加载失败"
+        subTitle={error}
+        extra={
+          <Button type="primary" onClick={() => navigate('/jobs')}>
+            返回岗位列表
+          </Button>
+        }
+      />
+    );
+  }
 
   if (loading || !job) return <LoadingOverlay />;
 

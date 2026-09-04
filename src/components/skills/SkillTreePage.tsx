@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Typography, Spin } from 'antd';
+import { Typography, Spin, Alert } from 'antd';
 import SkillTree from './SkillTree';
 import SkillDetailPanel from './SkillDetailPanel';
 import { useSkillStore } from '@/store';
@@ -8,12 +8,16 @@ import EmptyState from '@/components/common/EmptyState';
 const { Title } = Typography;
 
 export default function SkillTreePage() {
-  const { skillTree, selectedSkill, loading, fetchSkillTree, selectSkill } =
+  const { skillTree, selectedSkill, loading, error, fetchSkillTree, selectSkill } =
     useSkillStore();
 
   useEffect(() => {
     fetchSkillTree();
   }, [fetchSkillTree]);
+
+  if (error) {
+    return <Alert type="error" showIcon message="技能树加载失败" description={error} />;
+  }
 
   if (loading) {
     return (

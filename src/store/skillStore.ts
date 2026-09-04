@@ -7,6 +7,7 @@ interface SkillState {
   skillTree: SkillTreeNode[];
   selectedSkill: Skill | null;
   loading: boolean;
+  error: string | null;
 
   fetchSkills: () => Promise<void>;
   fetchSkillTree: () => Promise<void>;
@@ -20,17 +21,26 @@ export const useSkillStore = create<SkillState>((set, get) => ({
   skillTree: [],
   selectedSkill: null,
   loading: false,
+  error: null,
 
   fetchSkills: async () => {
-    set({ loading: true });
-    const skills = await api.getSkills();
-    set({ skills, loading: false });
+    set({ loading: true, error: null });
+    try {
+      const skills = await api.getSkills();
+      set({ skills, loading: false });
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : '技能加载失败' });
+    }
   },
 
   fetchSkillTree: async () => {
-    set({ loading: true });
-    const res = await api.getSkillTree();
-    set({ skillTree: res.tree, loading: false });
+    set({ loading: true, error: null });
+    try {
+      const res = await api.getSkillTree();
+      set({ skillTree: res.tree, loading: false });
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : '技能树加载失败' });
+    }
   },
 
   selectSkill: (skill) => set({ selectedSkill: skill }),
