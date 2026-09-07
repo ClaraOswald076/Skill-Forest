@@ -73,12 +73,24 @@ export const useJobStore = create<JobState>((set, get) => ({
     const { analysisResult, mergeDecisions, pendingRawText, pendingUrl } = get();
     if (!analysisResult) return null;
 
+    // The backend merges a skill only when merge_decisions says "merge" AND the
+    // skill carries merge_with_existing_id, so resolve the target id from the
+    // accepted suggestions instead of passing analysis skills through as-is.
+    const mergeTargetByName = new Map<string, number>(); // new_skill_name -> existing_skill_id
+    for (const ms of analysisResult.merge_suggestions) {
+      if (ms.action === 'merge') mergeTargetByName.set(ms.new_skill_name, ms.existing_skill_id);
+    }
+    const skills = analysisResult.skills.map((s) => {
+      const targetId = mergeTargetByName.get(s.name);
+      return targetId != null ? { ...s, merge_with_existing_id: targetId } : s;
+    });
+
     const saveReq: JobSaveRequest = {
       raw_text: pendingRawText,
       url: pendingUrl,
       title: analysisResult.job_title,
       company: analysisResult.company,
-      skills: analysisResult.skills,
+      skills,
       todos: analysisResult.todos,
       merge_decisions: mergeDecisions,
     };
