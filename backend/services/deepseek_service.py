@@ -142,31 +142,60 @@ def _recover_truncated_json(content: str) -> str:
     """
     Attempt to fix common JSON truncation issues:
     - Unclosed strings (add closing quote)
-    - Unclosed objects/arrays (add closing bracket)
+    - Unclosed objects/arrays (add closing brackets in the right order)
     - Trailing commas before end of object
+
+    Valid JSON is returned unchanged; broken (non-truncated) JSON is
+    returned as-is so the caller's retry path can handle it.
     """
     if not content:
         return "{}"
 
-    # Remove trailing comma before closing bracket/brace if present
-    content = content.rstrip()
+    text = content.strip()
+    try:
+        json.loads(text)
+        return text
+    except json.JSONDecodeError:
+        pass
 
-    # If the last character looks like it might be mid-string, try closing it
-    # Count quotes to see if we have an odd number
-    quote_count = content.count('"')
-    if quote_count % 2 != 0:
-        # Unclosed string — add closing quote
-        content += '"'
+    # Walk the text tracking string context, so quotes and braces inside
+    # string values don't get counted as structure
+    stack = []
+    in_string = False
+    escaped = False
+    for ch in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == '\\':
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch in '{[':
+            stack.append(ch)
+        elif ch in '}]':
+            if not stack or stack[-1] != ('{' if ch == '}' else '['):
+                return text  # mismatched closer: broken, not truncated
+            stack.pop()
 
-    # Count brackets
-    open_braces = content.count('{') - content.count('}')
-    open_brackets = content.count('[') - content.count(']')
+    repaired = text
+    if in_string:
+        if escaped:
+            repaired = repaired[:-1]  # drop the dangling escape before closing
+        repaired += '"'
+    repaired = repaired.rstrip()
+    if repaired.endswith(','):
+        repaired = repaired[:-1]
+    repaired += ''.join('}' if c == '{' else ']' for c in reversed(stack))
 
-    # Close any open structures
-    content += ']' * open_brackets
-    content += '}' * open_braces
-
-    return content
+    try:
+        json.loads(repaired)
+        return repaired
+    except json.JSONDecodeError:
+        return text
 
 
 def generate_dashboard_insight(stats: dict) -> str:
