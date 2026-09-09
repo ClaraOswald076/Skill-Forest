@@ -86,8 +86,9 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     try {
       const res = await api.generateTutorial(todoId);
       set({ tutorial: res, tutorialLoading: false });
-    } catch {
+    } catch (err) {
       set({ tutorialLoading: false });
+      throw err;
     }
   },
 
@@ -96,8 +97,9 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     try {
       const res = await api.generateTutorialRegenerate(todoId);
       set({ tutorial: res, tutorialLoading: false });
-    } catch {
+    } catch (err) {
       set({ tutorialLoading: false });
+      throw err;
     }
   },
 
@@ -169,8 +171,9 @@ export const useLearningStore = create<LearningState>((set, get) => ({
         currentAttemptId: res.attempt_id,
         quizLoading: false,
       });
-    } catch {
+    } catch (err) {
       set({ quizLoading: false });
+      throw err;
     }
   },
 
@@ -179,8 +182,9 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     try {
       const res = await api.submitQuiz({ attempt_id: attemptId, answers });
       set({ gradingResult: res, grading: false });
-    } catch {
+    } catch (err) {
       set({ grading: false });
+      throw err;
     }
   },
 

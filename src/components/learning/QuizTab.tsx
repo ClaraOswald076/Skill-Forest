@@ -1,5 +1,5 @@
 import { useLearningStore } from '@/store';
-import { Button, Spin } from 'antd';
+import { Button, Spin, message } from 'antd';
 import QuizForm from './QuizForm';
 import QuizResult from './QuizResult';
 
@@ -14,12 +14,20 @@ export default function QuizTab({ todoId }: Props) {
   } = useLearningStore();
 
   const handleGenerate = async () => {
-    await generateQuiz(todoId);
+    try {
+      await generateQuiz(todoId);
+    } catch {
+      message.error('生成测评失败，请检查后端服务后重试');
+    }
   };
 
   const handleSubmit = async (answers: { q_number: number; answer: string }[]) => {
     if (!currentAttemptId) return;
-    await submitQuiz(currentAttemptId, answers);
+    try {
+      await submitQuiz(currentAttemptId, answers);
+    } catch {
+      message.error('提交答卷失败，答案未保存，请重试');
+    }
   };
 
   // Show results after grading
