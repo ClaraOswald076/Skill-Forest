@@ -388,6 +388,36 @@ GRADING_PROMPT = """你是一个严格的评分老师。请根据标准答案，
 }}"""
 
 
+def _clean_grading(grading) -> dict:
+    """评分 LLM 的输出形状不受我们控制：顶层多键、条目缺键是常态。
+    这里在写库之前清洗成响应与错题本需要的最小结构，坏条目跳过而不是炸掉整卷。"""
+    if not isinstance(grading, dict):
+        raise ValueError(f"评分结果格式异常：期望 JSON 对象，实际是 {type(grading).__name__}")
+    results = []
+    for r in grading.get("results") or []:
+        if not isinstance(r, dict) or "q_number" not in r:
+            logger.warning(f"跳过缺少 q_number 的评分条目: {r}")
+            continue
+        try:
+            q_number = int(r["q_number"])
+        except (TypeError, ValueError):
+            logger.warning(f"跳过 q_number 无法解析的评分条目: {r}")
+            continue
+        results.append({
+            "q_number": q_number,
+            "score": r.get("score", 0),
+            "max_score": r.get("max_score", 0),
+            "is_correct": bool(r.get("is_correct", False)),
+            "explanation": r.get("explanation", ""),
+        })
+    return {
+        "results": results,
+        "total_score": grading.get("total_score", 0),
+        "max_score": grading.get("max_score", 0),
+        "overall_feedback": grading.get("overall_feedback", ""),
+    }
+
+
 def submit_quiz(db: Session, attempt_id: int, answers: List[dict]) -> dict:
     """Submit quiz answers for grading."""
     attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
@@ -423,7 +453,8 @@ def submit_quiz(db: Session, attempt_id: int, answers: List[dict]) -> dict:
             content = content[:-3]
         content = content.strip()
 
-        grading = json.loads(content)
+        # 清洗必须发生在任何写库之前，否则坏 JSON 会留下"分数已提交、响应却 500"的悬状态
+        grading = _clean_grading(json.loads(content))
 
         attempt.graded_json = json.dumps(grading, ensure_ascii=False)
         attempt.total_score = grading.get("total_score", 0)
@@ -443,7 +474,8 @@ def submit_quiz(db: Session, attempt_id: int, answers: List[dict]) -> dict:
 def _save_errors(db: Session, attempt: QuizAttempt, results: List[dict], answers: List[dict]):
     """Save incorrect answers to the error book."""
     questions = json.loads(attempt.questions_json).get("questions", [])
-    q_map = {q["q_number"]: q for q in questions}
+    # 题目本身也是 LLM 生成的，个别缺 q_number 不应让整本错题本落空
+    q_map = {q.get("q_number"): q for q in questions if isinstance(q, dict)}
     answer_map = {a.get("q_number"): a.get("answer", "") for a in answers}
 
     for r in results:
