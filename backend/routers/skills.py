@@ -59,6 +59,8 @@ def delete_skill(skill_id: int, db: Session = Depends(get_db)):
 
 @router.post("/merge")
 def merge_skills(data: MergeRequest, db: Session = Depends(get_db)):
+    if data.source_id == data.target_id:
+        raise HTTPException(status_code=400, detail="不能把技能合并进它自己")
     target = skill_service.merge_skills(db, data.source_id, data.target_id)
     if not target:
         raise HTTPException(status_code=404, detail="Source or target skill not found")
