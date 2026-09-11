@@ -4,7 +4,7 @@ import json
 import logging
 from typing import List, Optional
 
-from openai import OpenAI
+from openai import APIConnectionError, AuthenticationError, OpenAI
 
 from backend.config import (
     DEEPSEEK_API_KEY,
@@ -22,6 +22,24 @@ client = OpenAI(
     api_key=DEEPSEEK_API_KEY,
     base_url=DEEPSEEK_BASE_URL,
 )
+
+
+class AnalysisError(Exception):
+    """Raised when analysis fails for good or yields nothing usable.
+
+    str(e) is a user-facing reason; internal exception details stay in logs.
+    """
+
+
+def _failure_reason(e: Exception) -> str:
+    """Map an internal exception to a user-facing reason without leaking details."""
+    if isinstance(e, AuthenticationError):
+        return "DeepSeek API 密钥无效或未配置，请检查 .env 中的 DEEPSEEK_API_KEY"
+    if isinstance(e, APIConnectionError):
+        return "无法连接 DeepSeek 服务，请检查网络后重试"
+    if isinstance(e, (json.JSONDecodeError, KeyError)):
+        return "AI 返回内容无法解析，请重试"
+    return "DeepSeek 服务暂时不可用，请稍后重试"
 
 
 def analyze_job_requirements(
@@ -106,23 +124,19 @@ def analyze_job_requirements(
                 analysis.skills, existing_skills
             )
 
+            if not analysis.skills and not analysis.todos:
+                raise AnalysisError(
+                    "未能从文本中提取出任何技能或任务，请检查粘贴的内容是否完整"
+                )
+
             return analysis
 
+        except AnalysisError:
+            raise
         except (json.JSONDecodeError, KeyError, Exception) as e:
             logger.warning(f"DeepSeek API attempt {attempt + 1} failed: {e}")
             if attempt == 2:
-                # Return empty result on final failure
-                return AnalysisResponse(
-                    job_title=job_title,
-                    company=company,
-                    skills=[],
-                    todos=[],
-                    merge_suggestions=[],
-                    summary=f"分析失败: {str(e)}",
-                )
-
-    # Should not reach here
-    return AnalysisResponse(job_title=job_title, company=company)
+                raise AnalysisError(_failure_reason(e)) from e
 
 
 def _compact_existing_skills(skills: List[dict]) -> List[dict]:

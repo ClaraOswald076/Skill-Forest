@@ -1,6 +1,6 @@
 """Analysis router — DeepSeek-powered job requirement analysis."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -20,11 +20,14 @@ def preview_analysis(data: AnalysisRequest, db: Session = Depends(get_db)):
     existing_skills = skill_service.get_all_skills_as_dicts(db)
 
     # Call DeepSeek
-    result = deepseek_service.analyze_job_requirements(
-        raw_text=data.raw_text,
-        existing_skills=existing_skills,
-        job_title=data.job_title,
-        company=data.company,
-    )
+    try:
+        result = deepseek_service.analyze_job_requirements(
+            raw_text=data.raw_text,
+            existing_skills=existing_skills,
+            job_title=data.job_title,
+            company=data.company,
+        )
+    except deepseek_service.AnalysisError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
     return result
