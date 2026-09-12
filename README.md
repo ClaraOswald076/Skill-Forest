@@ -3,7 +3,7 @@
   <p align="center"><strong>AI 驱动的技能学习与岗位匹配系统</strong></p>
   <p align="center">
     <img src="https://img.shields.io/badge/python-3.8+-blue" alt="Python">
-    <img src="https://img.shields.io/badge/node-18+-green" alt="Node">
+    <img src="https://img.shields.io/badge/node-20.19+-green" alt="Node">
     <img src="https://img.shields.io/badge/react-18-61dafb" alt="React">
     <img src="https://img.shields.io/badge/fastapi-0.100+-009688" alt="FastAPI">
     <img src="https://img.shields.io/badge/antd-5-1677ff" alt="Ant Design">
@@ -188,7 +188,7 @@ skills ──M:N── skill_jobs ──M:N── jobs
 ### 前提条件
 
 - **Python** ≥ 3.8
-- **Node.js** ≥ 18
+- **Node.js** ≥ 20.19（Vite 8 的要求，`^20.19.0 || >=22.12.0`）
 - **DeepSeek API Key**（[免费注册获取](https://platform.deepseek.com/api_keys)，新用户有赠送额度）
 
 ### 安装
@@ -196,11 +196,11 @@ skills ──M:N── skill_jobs ──M:N── jobs
 ```bash
 # 1. 克隆或下载项目
 git clone <your-repo-url>
-cd skill-forest
+cd Skill-Forest
 
 # 2. 配置 API Key
-# 编辑 backend/config.py，将第 7 行替换为你的密钥
-# DEEPSEEK_API_KEY = "sk-你的真实密钥"
+cp .env.example .env                # Windows 用 copy .env.example .env
+# 编辑 .env，填入你的 DEEPSEEK_API_KEY
 
 # 3. 安装依赖
 pip install -r requirements.txt   # Python 后端
@@ -213,21 +213,21 @@ npx vite --host --port 5173
 
 浏览器打开 **http://localhost:5173**
 
-> 💡 Windows 用户也可以直接双击 `setup.bat` → `start.bat`
+> 💡 Windows 用户也可以直接双击 `start.bat`
 
 ### 配置 API Key
 
-三种方式任选其一：
+三种方式任选其一（推荐方式 1）：
 
-```python
-# 方式 1：直接写入 config.py
-DEEPSEEK_API_KEY = "sk-你的密钥"
+```bash
+# 方式 1：.env 文件（推荐）
+cp .env.example .env      # 然后编辑 .env，填入密钥
 
 # 方式 2：环境变量
 export DEEPSEEK_API_KEY="sk-你的密钥"     # Linux/Mac
 set DEEPSEEK_API_KEY=sk-你的密钥         # Windows
 
-# 方式 3：.env 文件（复制 .env.example 为 .env，填入密钥）
+# 方式 3：直接改 backend/config.py 里 os.environ.get("DEEPSEEK_API_KEY", ...) 的默认值
 ```
 
 ---
@@ -324,7 +324,7 @@ skill-forest/
 │   │   ├── dashboard_service.py    # 聚合统计
 │   │   └── learning_service.py     # 教程/聊天/测评/错题本
 │   │
-│   ├── routers/                    # FastAPI 路由（29 个端点）
+│   ├── routers/                    # FastAPI 路由（33 个端点）
 │   ├── prompts/                    # AI 系统提示词
 │   └── utils/                      # 工具（相似度计算、树构建）
 │
@@ -349,7 +349,6 @@ skill-forest/
 │   └── styles/                     # 全局样式
 │
 ├── data/                           # SQLite 数据库文件（自动创建）
-├── setup.bat                       # 一键安装依赖
 ├── start.bat                       # 一键启动
 ├── requirements.txt                # Python 依赖
 ├── package.json                    # npm 依赖
@@ -362,27 +361,43 @@ skill-forest/
 
 后端启动后可访问 **http://127.0.0.1:8765/docs** 查看自动生成的 Swagger 文档。
 
-### 端点总览（29 个）
+### 端点总览（33 个）
 
 | 模块 | 端点 | 说明 |
 |------|------|------|
 | Dashboard | `GET /api/dashboard` | 仪表盘聚合统计 |
-| Skills | `GET/POST /api/skills` | 技能列表 / 创建 |
+| Skills | `GET /api/skills` | 技能列表 |
 | | `GET /api/skills/tree` | 技能树（嵌套结构） |
-| | `GET/PUT /api/skills/:id` | 技能详情 / 更新 |
+| | `GET /api/skills/:id` | 技能详情 |
+| | `POST /api/skills` | 创建技能 |
+| | `PUT /api/skills/:id` | 更新技能 |
+| | `DELETE /api/skills/:id` | 删除技能 |
 | | `POST /api/skills/merge` | 合并两个技能 |
-| Jobs | `GET/POST /api/jobs` | 岗位列表 / 保存分析结果 |
-| | `GET/DELETE /api/jobs/:id` | 岗位详情 / 删除 |
-| Todos | `GET/POST /api/todos` | 任务列表 |
-| | `GET/PUT /api/todos/:id` | 任务详情 / 更新 |
+| Jobs | `GET /api/jobs` | 岗位列表 |
+| | `GET /api/jobs/:id` | 岗位详情 |
+| | `POST /api/jobs` | 保存分析结果 |
+| | `DELETE /api/jobs/:id` | 删除岗位 |
+| Todos | `GET /api/todos` | 任务列表 |
+| | `GET /api/todos/:id` | 任务详情 |
+| | `PUT /api/todos/:id` | 更新任务 |
+| | `POST /api/todos` | 创建任务 |
 | Analysis | `POST /api/analysis/preview` | JD 分析预览 |
 | Learning | `POST /api/learning/tutorial/generate` | 生成教程 |
 | | `GET /api/learning/tutorial/:todo_id` | 获取教程 |
-| | `CRUD /api/learning/chat/sessions` | 对话会话管理 |
+| | `POST /api/learning/chat/sessions` | 创建对话会话 |
+| | `GET /api/learning/chat/sessions` | 会话列表 |
+| | `GET /api/learning/chat/sessions/:id` | 会话详情 |
+| | `PATCH /api/learning/chat/sessions/:id` | 更新会话 |
+| | `DELETE /api/learning/chat/sessions/:id` | 删除会话 |
 | | `POST /api/learning/chat/send` | 发送消息 |
 | | `POST /api/learning/quiz/generate` | 生成测评 |
+| | `GET /api/learning/quiz/attempts` | 测评记录列表 |
+| | `GET /api/learning/quiz/attempts/:id` | 测评记录详情 |
 | | `POST /api/learning/quiz/submit` | 提交评分 |
-| | `CRUD /api/learning/errors` | 错题本管理 |
+| | `GET /api/learning/errors` | 错题列表 |
+| | `GET /api/learning/errors/stats` | 错题统计 |
+| | `PATCH /api/learning/errors/:id` | 标记已复习 |
+| | `DELETE /api/learning/errors/:id` | 删除错题 |
 
 ---
 
