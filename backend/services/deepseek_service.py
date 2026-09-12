@@ -245,9 +245,21 @@ def _secondary_merge_check(
         name = skill_dict.get("name", "")
         desc = skill_dict.get("description", "")
 
-        # Already decided to merge with high confidence — skip
-        if skill_dict.get("merge_with_existing_id") and skill_dict.get("merge_confidence", 0) >= 0.85:
-            continue
+        # The API already decided to merge with high confidence: surface it as
+        # a suggestion so the user sees it in the preview and the target id can
+        # reach the save request. Skipping these made decided merges vanish.
+        decided_id = skill_dict.get("merge_with_existing_id")
+        if decided_id and skill_dict.get("merge_confidence", 0) >= 0.85:
+            existing = next((e for e in existing_skills if e["id"] == decided_id), None)
+            if existing:
+                suggestions.append(MergeSuggestion(
+                    existing_skill_id=existing["id"],
+                    existing_skill_name=existing["name"],
+                    new_skill_name=name,
+                    similarity=round(min(skill_dict.get("merge_confidence", 0), 1.0), 2),
+                    action="merge",
+                ))
+                continue
 
         # Check against all existing skills
         for existing in existing_skills:
