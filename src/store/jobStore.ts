@@ -7,6 +7,7 @@ interface JobState {
   jobs: Job[];
   selectedJob: JobDetail | null;
   loading: boolean;
+  error: string | null;
   isAnalyzing: boolean;
   analysisResult: AnalysisResponse | null;
   mergeDecisions: Record<string, 'merge' | 'keep_separate'>;
@@ -27,6 +28,7 @@ export const useJobStore = create<JobState>((set, get) => ({
   jobs: [],
   selectedJob: null,
   loading: false,
+  error: null,
   isAnalyzing: false,
   analysisResult: null,
   mergeDecisions: {},
@@ -34,15 +36,23 @@ export const useJobStore = create<JobState>((set, get) => ({
   pendingUrl: '',
 
   fetchJobs: async () => {
-    set({ loading: true });
-    const jobs = await api.getJobs();
-    set({ jobs, loading: false });
+    set({ loading: true, error: null });
+    try {
+      const jobs = await api.getJobs();
+      set({ jobs, loading: false });
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : '岗位列表加载失败' });
+    }
   },
 
   fetchJob: async (id) => {
-    set({ loading: true });
-    const job = await api.getJob(id);
-    set({ selectedJob: job, loading: false });
+    set({ loading: true, error: null });
+    try {
+      const job = await api.getJob(id);
+      set({ selectedJob: job, loading: false });
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : '岗位加载失败' });
+    }
   },
 
   selectJob: (job) => set({ selectedJob: job }),

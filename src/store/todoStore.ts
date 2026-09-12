@@ -11,6 +11,7 @@ interface TodoFilter {
 interface TodoState {
   todos: TodoItem[];
   loading: boolean;
+  error: string | null;
   filters: TodoFilter;
 
   fetchTodos: () => Promise<void>;
@@ -22,17 +23,22 @@ interface TodoState {
 export const useTodoStore = create<TodoState>((set, get) => ({
   todos: [],
   loading: false,
+  error: null,
   filters: { job_id: null, status: null, skill_id: null },
 
   fetchTodos: async () => {
-    set({ loading: true });
-    const { filters } = get();
-    const todos = await api.getTodos({
-      job_id: filters.job_id ?? undefined,
-      status: filters.status ?? undefined,
-      skill_id: filters.skill_id ?? undefined,
-    });
-    set({ todos, loading: false });
+    set({ loading: true, error: null });
+    try {
+      const { filters } = get();
+      const todos = await api.getTodos({
+        job_id: filters.job_id ?? undefined,
+        status: filters.status ?? undefined,
+        skill_id: filters.skill_id ?? undefined,
+      });
+      set({ todos, loading: false });
+    } catch (err) {
+      set({ loading: false, error: err instanceof Error ? err.message : '任务加载失败' });
+    }
   },
 
   setFilter: (key, value) => {

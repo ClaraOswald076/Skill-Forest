@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Typography, Space, Popconfirm, Tag } from 'antd';
+import { Table, Button, Typography, Space, Popconfirm, Tag, Alert } from 'antd';
 import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useJobStore, useUIStore } from '@/store';
 import type { Job } from '@/types/job';
@@ -12,7 +12,7 @@ const { Title } = Typography;
 
 export default function JobListPage() {
   const navigate = useNavigate();
-  const { jobs, loading, fetchJobs, deleteJob } = useJobStore();
+  const { jobs, loading, error, fetchJobs, deleteJob } = useJobStore();
   const { openJobInput } = useUIStore();
 
   useEffect(() => {
@@ -87,7 +87,9 @@ export default function JobListPage() {
         </Button>
       </div>
 
-      {loading ? (
+      {error ? (
+        <Alert type="error" showIcon message="岗位列表加载失败" description={error} />
+      ) : loading ? (
         <LoadingOverlay />
       ) : jobs.length === 0 ? (
         <EmptyState
