@@ -30,6 +30,11 @@ class JobResponse(BaseModel):
 class JobDetailResponse(JobResponse):
     skills: List["SkillResponse"] = []
     todos: List["TodoResponse"] = []
+    # 保存统计仅在 POST /api/jobs 响应里填，GET 端点保持默认 0
+    skills_created: int = 0
+    skills_merged: int = 0
+    skills_deduped: int = 0
+    todos_created: int = 0
 
 
 # Avoid circular imports — import at end

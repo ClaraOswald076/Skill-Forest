@@ -67,7 +67,7 @@ def save_job_with_analysis(db: Session, data: JobSaveRequest) -> dict:
     db.add(job)
     db.flush()  # Get job.id
 
-    stats = {"skills_created": 0, "skills_merged": 0, "todos_created": 0}
+    stats = {"skills_created": 0, "skills_merged": 0, "skills_deduped": 0, "todos_created": 0}
 
     # 2. Process skills
     skill_map: Dict[str, Skill] = {}  # skill_name -> Skill ORM object
@@ -84,6 +84,12 @@ def save_job_with_analysis(db: Session, data: JobSaveRequest) -> dict:
                 skill_map[es.name] = existing
                 stats["skills_merged"] += 1
                 continue
+
+        # 分析 LLM 偶尔对同一技能返回两条同名条目（分类不同）。
+        # 提交内按名字去重跳过后出现的同名项，下面的 todo 回链也只会命中保留的那条。
+        if es.name in skill_map:
+            stats["skills_deduped"] += 1
+            continue
 
         # Create new skill
         skill = Skill(
@@ -126,5 +132,6 @@ def save_job_with_analysis(db: Session, data: JobSaveRequest) -> dict:
         "job": job,
         "skills_created": stats["skills_created"],
         "skills_merged": stats["skills_merged"],
+        "skills_deduped": stats["skills_deduped"],
         "todos_created": stats["todos_created"],
     }
