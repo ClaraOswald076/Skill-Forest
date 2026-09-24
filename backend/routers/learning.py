@@ -95,7 +95,7 @@ def send_chat_message(data: ChatSendRequest, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"消息发送失败: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"AI 服务调用失败: {str(e)}")
 
 
 # ── Quiz ──

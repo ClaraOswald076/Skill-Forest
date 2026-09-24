@@ -249,18 +249,10 @@ def send_chat_message(db: Session, session_id: int, message: str) -> dict:
 
         return {"user_message": user_msg, "ai_message": ai_msg}
     except Exception as e:
+        # 失败不落伪 assistant 消息：异常原文一旦入库就会被当成历史，
+        # 随后续每轮请求回传给 LLM。用户发言已落库，这里原样上抛由路由转 502。
         logger.error(f"Chat message failed: {e}")
-        # Save error message
-        error_msg = ChatMessage(
-            session_id=session_id,
-            role="assistant",
-            content=f"抱歉，消息发送失败：{str(e)}",
-        )
-        db.add(error_msg)
-        db.commit()
-        db.refresh(error_msg)
-        db.refresh(user_msg)
-        return {"user_message": user_msg, "ai_message": error_msg}
+        raise
 
 
 # ─── Quiz ────────────────────────────────────────────────
