@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { Switch, Typography, Spin } from 'antd';
+import { Switch, Typography, Spin, message } from 'antd';
 import { useLearningStore } from '@/store';
 import ReasoningBubble from './ReasoningBubble';
 import ChatInput from './ChatInput';
@@ -9,7 +9,7 @@ import remarkGfm from 'remark-gfm';
 const { Text } = Typography;
 
 export default function ChatPanel() {
-  const { activeSession, sendingMessage, sendMessage, toggleDeepThinking } = useLearningStore();
+  const { activeSession, sendingMessage, sendMessage, loadSession, toggleDeepThinking } = useLearningStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,7 +19,13 @@ export default function ChatPanel() {
   if (!activeSession) return null;
 
   const handleSend = async (text: string) => {
-    await sendMessage(activeSession.id, text);
+    try {
+      await sendMessage(activeSession.id, text);
+    } catch {
+      // 失败时用户的发言已入库，重新拉取会话让界面和真实历史一致
+      message.error('消息发送失败，请重试');
+      loadSession(activeSession.id);
+    }
   };
 
   return (
