@@ -39,6 +39,8 @@ def create_job_with_analysis(data: JobSaveRequest, db: Session = Depends(get_db)
     resp = job.to_dict()
     resp["skills"] = [s.to_dict() for s in job.skills] if job.skills else []
     resp["todos"] = [t.to_dict() for t in job.todo_items] if job.todo_items else []
+    for key in ("skills_created", "skills_merged", "skills_deduped", "todos_created"):
+        resp[key] = result[key]
     return resp
 
 
