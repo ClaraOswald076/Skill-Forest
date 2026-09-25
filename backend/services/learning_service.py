@@ -383,7 +383,7 @@ GRADING_PROMPT = """你是一个严格的评分老师。请根据标准答案，
     {{ "q_number": 2, "score": 0, "max_score": 2, "is_correct": false, "explanation": "正确答案是 B，因为..." }}
   ],
   "total_score": 45,
-  "max_score": 60,
+  "max_score": 90,
   "overall_feedback": "总体评价和建议"
 }}"""
 
