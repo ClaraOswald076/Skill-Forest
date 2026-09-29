@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import HOST, PORT
+from backend.config import HOST, PORT, is_api_key_configured
 from backend.database import init_db
 from backend.routers import skills, jobs, todos, analysis, dashboard, learning
 
@@ -20,6 +20,11 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database...")
     init_db()
     logger.info("Database initialized.")
+    if not is_api_key_configured():
+        logger.warning(
+            "DeepSeek API Key 未配置：岗位分析/教程/测评/聊天等 AI 功能将失败。"
+            "请复制 .env.example 为 .env 并填入 DEEPSEEK_API_KEY。"
+        )
     yield
 
 
@@ -50,7 +55,7 @@ app.include_router(learning.router)
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "key_configured": is_api_key_configured()}
 
 
 if __name__ == "__main__":
