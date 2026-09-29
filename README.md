@@ -206,8 +206,10 @@ cd skill-forest
 pip install -r requirements.txt   # Python 后端
 npm install                       # 前端
 
-# 4. 启动
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8765 &
+# 4. 启动（开两个终端，分别执行）
+# 终端 1 —— 后端：
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8765
+# 终端 2 —— 前端：
 npx vite --host --port 5173
 ```
 
